@@ -1,12 +1,14 @@
 import numpy as np
 import xarray as xr
 from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap, BoundaryNorm
 from scipy.ndimage import label
 from find_dates import find_dates, group_ars, binar_search, read_czechia, prep
 from scipy.interpolate import RegularGridInterpolator
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from scipy.integrate import solve_ivp
+from scipy.ndimage import uniform_filter1d
 
 
 time = "2002-08-11T12:00:00.000000000"
@@ -220,13 +222,15 @@ def traceback(time, num, level):
         out = []
 
         for sol in result:
-            t_vals = np.linspace(sol.t[0], sol.t[-1], 100)
+            #t_vals = np.linspace(sol.t[0], sol.t[-1], 100)
+            t_vals = sol.t
             x_vals = sol.sol(t_vals)[0]
             y_vals = sol.sol(t_vals)[1]
             p_vals = sol.sol(t_vals)[2]
 
             q_vals = interpolate_q_along_traj(t_vals, p_vals, y_vals, x_vals)
-            DqDt = np.gradient(q_vals, t_vals)*1000
+            q_smooth = uniform_filter1d(q_vals, size=5, mode="nearest")
+            DqDt = np.gradient(q_smooth, t_vals) * 1000  # g/kg/h
             out.append({
                 "t": t_vals,
                 "x": x_vals,
@@ -258,7 +262,7 @@ def plot_trajectories(result, set_extent = True, save = False):
         plt.show()
 
 
-def plot_trajectories_with_DqDt(trajs_with_q, set_extent=True, save=False):
+def plot_trajectories_with_DqDt(trajs_with_q, set_extent=True, save=False, colour = False):
         fig, ax = plt.subplots(figsize=(10, 6), subplot_kw={"projection": ccrs.PlateCarree()})
         ax.add_feature(cfeature.COASTLINE, linewidth=0.8)
         ax.add_feature(cfeature.BORDERS, linestyle=':')
@@ -266,9 +270,18 @@ def plot_trajectories_with_DqDt(trajs_with_q, set_extent=True, save=False):
         all_dqdt = np.concatenate([tr["DqDt"] for tr in trajs_with_q])
         vmin, vmax = np.percentile(all_dqdt,10), np.percentile(all_dqdt, 90)
 
+        if colour:
+            cmap = ListedColormap(['blue', 'red'])
+            norm = BoundaryNorm([-1000, 0, 1000], cmap.N)
+        else:
+            cmap = "RdYlBu"
+            norm = None
+
         for tr in trajs_with_q:
-            sc = ax.scatter(tr["x"], tr["y"], c=tr["DqDt"], cmap="RdYlBu",
-                            vmin=vmin, vmax=vmax, s=0.3, edgecolor="none",
+            sc = ax.scatter(tr["x"], tr["y"], c=tr["DqDt"], cmap=cmap, norm = norm,
+                            vmin=vmin if norm is None else None,
+                            vmax=vmax if norm is None else None,
+                            s=0.5, edgecolor="none",
                             transform=ccrs.PlateCarree())
 
         if set_extent: ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
@@ -279,11 +292,10 @@ def plot_trajectories_with_DqDt(trajs_with_q, set_extent=True, save=False):
 
 
 if __name__ == "__main__":
-    trajs, trajs_q = traceback(time, 1000, 800)
-    plot_trajectories_with_DqDt(trajs_q, set_extent=False)
-    for traj in trajs_q:
-        print(trajs_q["x"], trajs_q["y"])
-    plot_trajectories(trajs, set_extent=False)
+    trajs, trajs_q = traceback(time, 1000, 837)
+    plot_trajectories_with_DqDt(trajs_q, set_extent=False, save=True)
+    plot_trajectories_with_DqDt(trajs_q, set_extent=False, save=True, colour=True)
+    plot_trajectories(trajs, set_extent=False, save=True)
 
 #e-p plot sum for different days
 #composite plots
