@@ -10,27 +10,26 @@ from trace_back import get_points
 
 time = "2002-08-11T06:00:00.000000000"
 
-def get_precipitaion_evaporation(time, eva = False):
+def get_precipitaion(time, eva = False):
     """
     It gets data for plotting precipitation or evaporation.
     :param time: np.datetime
     :param eva: True/False whether you want evaporation or precipitation
     :return: dataset for the time
     """
-    address = "/net/meop-nas13.priv/volume1/data1/nmcrespo/ARs_Choutka/e_p_200207_200208.nc"
+    address = "/net/meop-nas13.priv/volume1/data1/nmcrespo/ARs_Choutka/pr_2002.nc"
     data = xr.open_dataset(address)
-    if eva:
-        output = data["e"].sel(valid_time = time)
-    else:
-        day = time[:10]
-        precipitation = data["tp"].sel(valid_time = day)
-        daily_tp = precipitation.sum(dim = "valid_time")
-        output = daily_tp * 1000
+    day = time[:10]
+    precipitation = data["tp"].sel(valid_time = day)
+    if precipitation.valid_time.size == 0:
+        return None
+    daily_tp = precipitation.sum(dim = "valid_time")
+    output = daily_tp * 1000
 
     return output
 
 
-def precipitation_after_AR(time, days=2, threshold = 5):
+def precipitation_after_AR(time, days=3, threshold = 5):
     """
     Decides whether there occured a strong daily precipitation over Czechia after selected date
     :param time: np.datetime
@@ -41,11 +40,13 @@ def precipitation_after_AR(time, days=2, threshold = 5):
     time = np.datetime64(time, "D")
     mask = None
 
-    for i in range(days + 1):
+    for i in range(days):
         day = np.datetime_as_string(time + np.timedelta64(i, "D"), unit="D")
-        tp = (get_precipitaion_evaporation(day)
+        tp = (get_precipitaion(day)
               .rename({"latitude": "lat", "longitude": "lon"})
               .sel(lat=slice(52, 47), lon=slice(10, 20)))
+        if tp is None:
+            return None
 
         if mask is None:
             mask = read_czechia(tp).notnull()
@@ -79,8 +80,11 @@ def monthly_ar_sum(groups, precip = False):
         for i in range(first,last+1):
             monthly_sum[i] += 1
             if precip:
-                if strong_rain:
+                if strong_rain is None:
+                    print("day after 2002")
+                elif strong_rain:
                     monthly_precipitation_sum[i] += 1
+                    print(last)
     return monthly_sum, monthly_precipitation_sum
 
 
@@ -92,28 +96,21 @@ def alfons_mucha(save_fig = False, precip = False):
     """
     dates = find_dates("ERA5.ar_tag.GuanWaliser_v2.1hr.20020101-20021231.nc")
     groups = group_ars(dates)
-    monthly_sum, monthly_precip = monthly_ar_sum(groups, False)
+    monthly_sum, monthly_precip = monthly_ar_sum(groups, precip)
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     fig, ax = plt.subplots(figsize = (8,6))
-    colors = [
-        "#1f77b4",  # modrá
-        "#ff7f0e",  # oranžová
-        "#2ca02c",  # zelená
-        "#d62728",  # červená
-        "#9467bd",  # fialová
-        "#8c564b",  # hnědá
-        "#e377c2",  # růžová
-        "#7f7f7f",  # šedá
-        "#bcbd22",  # olivová
-        "#17becf",  # tyrkysová
-        "#aec7e8",  # světle modrá
-        "#ffbb78",  # světle oranžová
-    ]
-    ax.bar(months, monthly_sum, color = colors)
+    ax.bar(months, monthly_sum, color = "lightsteelblue", label="All ARs")
     if precip:
-        ax.bar(months, monthly_precip, width=0.4, color="navy", label="AR with precipitation")
+        ax.bar(months, monthly_precip, width=0.4, color="navy",
+               label="ARs followed by strong precipitation")
+        # podíl nad sloupcem
+        for m, (tot, hit) in enumerate(zip(monthly_sum, monthly_precip)):
+            if tot > 0:
+                ax.text(m, tot + 0.05, f"{hit}/{tot}", ha="center", va="bottom", fontsize=8)
+        ax.legend()
     ax.set_title("Number of ARs in different months")
     ax.set_ylabel("Number of ARs")
+    ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     if save_fig: plt.savefig("monthly_arsum.png", dpi = 300)
     plt.show()
 

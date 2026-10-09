@@ -389,6 +389,7 @@ def plots(kind, time, **kwargs):
     save = kwargs.pop("save", False)
     extent = kwargs.pop("set_extent", True)
     vmax = kwargs.pop("vmax", 40)
+    precip = kwargs.pop("precip",False)
 
     if isinstance(time, (list, tuple)):
         times = list(time)
@@ -450,7 +451,7 @@ def plots(kind, time, **kwargs):
         munch(whole_year=True, set_extent=extent, save = save)
 
     elif kind == "AR_count":
-        alfons_mucha(save_fig=save)
+        alfons_mucha(save_fig=save, precip=precip)
 
     elif kind == "q_distribution":
         klimt(time, savefig = save)
@@ -466,8 +467,10 @@ def plots(kind, time, **kwargs):
 
 times = ["2002-08-05T12:00:00", "2002-08-06T12:00:00", "2002-08-07T12:00:00"]
 
-plots("precipitation", times)                               # tři IVT vedle sebe
-plots("ep", times, save=False, set_extent=False)             # tři srážkové mapy, uloží se
+#plots("precipitation", times, set_extent=False)                               # tři IVT vedle sebe
+#plots("ep", times, save=False, set_extent=False)             # tři srážkové mapy, uloží se
 #plots(["ivt", "wind_field"], times, level=850)       # dvě samostatné figury, každá s třemi panely
-#plots("ivt", times[0])                               # jeden čas jako dřív
+#plots("ivt", times[0])
+plots(["AR_count"], time, precip=True, save=True)
+# jeden čas jako dřív
 
