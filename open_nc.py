@@ -4,6 +4,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from matplotlib.colors import ListedColormap
 import matplotlib.animation as animation
+from matplotlib.patches import Patch
 
 
 file = "ERA5.ar_tag.GuanWaliser_v2.1hr.20020101-20021231.nc"
@@ -33,7 +34,7 @@ def data_daily(file):
     daily = data[var].isel(time = data.time.dt.hour == 12)
     return daily
 
-def davinci(file, time):
+def davinci(file, time, save = False):
     """
     Plots and prints information of dataset for specific time
     :param file: netcdf
@@ -42,11 +43,14 @@ def davinci(file, time):
     """
     fig, ax = plt.subplots(figsize=(9,6),subplot_kw={"projection": ccrs.PlateCarree()})
     data_test = print_time(file,time)
-    data_test.plot(ax=ax, transform=ccrs.PlateCarree(), cmap = cmap, add_colorbar = True, label = "AR")
+    data_test.plot(ax=ax, transform=ccrs.PlateCarree(), cmap = cmap, add_colorbar = False, label = "AR")
     ax.coastlines()
     ax.add_feature(cfeature.BORDERS, linewidth = 0.5)
     ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
     ax.set_title(f"AR detection, time = {time[:13]}")
+    ax.legend(handles=[Patch(facecolor="blue", edgecolor="k", label="atmospheric river")],
+              loc="lower left")
+    if save: plt.savefig("ar_detection.png", dpi = 300)
     plt.show()
 
 
@@ -74,6 +78,6 @@ def animate(data, name):
     plt.show()
 
 if __name__ == "__main__":
-    davinci(file,time)
+    davinci(file,time, save=True)
 
 #animate(file)
