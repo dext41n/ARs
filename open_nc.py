@@ -50,7 +50,7 @@ def davinci(file, time, save = False):
     ax.set_title(f"AR detection, time = {time[:13]}")
     ax.legend(handles=[Patch(facecolor="blue", edgecolor="k", label="atmospheric river")],
               loc="lower left")
-    if save: plt.savefig("ar_detection.png", dpi = 300)
+    if save: plt.savefig("/mnt/raid1/home/choutkam/ARs/ar_detection.png", dpi = 300, bbox_inches="tight")
     plt.show()
 
 

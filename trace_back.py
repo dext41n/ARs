@@ -290,7 +290,7 @@ def plot_trajectories(result, set_extent = True, save = False):
 
         if set_extent: ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
         plt.title("Back-trajectories")
-        if save: plt.savefig("trajektorie_from_cz.png", dpi=300, bbox_inches="tight")
+        if save: plt.savefig("/mnt/raid1/home/choutkam/ARs/trajektorie_from_cz.png", dpi=300, bbox_inches="tight")
         plt.show()
 
 
@@ -321,7 +321,7 @@ def plot_trajectories_with_DqDt(trajs_with_q, set_extent=True, save=False, colou
         if set_extent: ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
         ax.set_title("Back-trajectories colored by Dq/Dt")
         fig.colorbar(sc, label="Dq/Dt [g/kg/h]")
-        if save: plt.savefig("trajektorie_DqDt.png", dpi=300, bbox_inches="tight")
+        if save: plt.savefig("/mnt/raid1/home/choutkam/ARs/trajektorie_DqDt.png", dpi=300, bbox_inches="tight")
         plt.show()
 
 

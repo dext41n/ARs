@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -63,6 +65,7 @@ def monthly_ar_sum(groups, precip = False):
     Sums up ARs every month, if AR is included in more monhts, it will be counted in both.
     Also counts if there was a strong rain after the AR.
     :param groups: list of ARs
+    :param precip: True/False if precipitation after AR should be counted in
     :return: list of 12 integers.
     """
     monthly_sum = np.zeros(12, dtype=int)
@@ -111,7 +114,7 @@ def alfons_mucha(save_fig = False, precip = False):
     ax.set_title("Number of ARs in different months")
     ax.set_ylabel("Number of ARs")
     ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
-    if save_fig: plt.savefig("monthly_arsum.png", dpi = 300)
+    if save_fig: plt.savefig("/mnt/raid1/home/choutkam/ARs/monthly_arsum.png", dpi = 300, bbox_inches = "tight")
     plt.show()
 
 
@@ -134,7 +137,6 @@ def IVT_composite():
         ivt_month.name = "ivt"
         ivt_month.attrs["units"] = "kg m-1 s-1"
         ivt_month.attrs["long_name"] = "Integrated vapor transport"
-        ivt_month.to_netcdf(file_name)
         ivt_month.to_netcdf(file_name)
         ivt_files.append(file_name)
         print(f"Měsíc {i:02d} hotov.")
@@ -229,9 +231,9 @@ def munch(whole_year = False ,save = False, set_extent = True):
     :return: plots
     """
     if whole_year:
-        composite_file = "/home/choutkam/ARs/ivt_composite_AR_days.nc"
-    else:
         composite_file = "/home/choutkam/ARs/ivt_composite_2002.nc"
+    else:
+        composite_file = "/home/choutkam/ARs/ivt_composite_AR_days.nc"
     fig, ax = plt.subplots(figsize=(10, 5), subplot_kw={"projection": ccrs.PlateCarree()})
     data = xr.open_dataset(composite_file)
     data = data["ivt"]

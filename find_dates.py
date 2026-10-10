@@ -47,6 +47,7 @@ def find_dates(file = soubor):
     return times_ar.values
 
 
+
 def group_ars(dates, tol = 12):
     """
     Seperates dates with given tol into groups.

@@ -60,7 +60,7 @@ def finish(own_fig, save, filename):
     """Saves only when own_fig"""
     if own_fig:
         if save:
-            plt.savefig(filename, dpi=300, bbox_inches="tight")
+            plt.savefig(f"/mnt/raid1/home/choutkam/ARs/{filename}", dpi=300, bbox_inches="tight")
         plt.show()
 
 
@@ -154,7 +154,7 @@ def animatev2(data, name):
         return mesh
 
     ani = animation.FuncAnimation(fig, update,frames=len(data.time), interval=5/2, blit=False)
-    ani.save(name, writer="ffmpeg", fps=5)
+    ani.save(name, writer="pillow", fps=5, dpi=300)
 
 
 def create_animation(time_interval, name):
@@ -167,7 +167,7 @@ def create_animation(time_interval, name):
     ivt_file = ivt((time_interval[0], time_interval[1]))
     animatev2(ivt_file,name)
 
-#create_animation(time_interval=("2002-07-27T12:00:00.000000000","2002-08-17T12:00:00.000000000"),name="ivt.mp4")
+
 
 
 def data_for_plot(time,level):
@@ -477,4 +477,5 @@ times = ["2002-08-08T12:00:00", "2002-08-10T12:00:00", "2002-08-11T12:00:00"]
 #plots(["wind_field"], time, level=777)
 # jeden čas jako dřív "q_wind", "ep", "streamlines"
 plots(["ivt", "q_wind", "ep", "streamlines"], times, level = 850)
+create_animation(time_interval=("2002-08-02T12:00:00.000000000","2002-08-11T18:00:00.000000000"),name="ivt.gif")
 
