@@ -7,6 +7,7 @@ from ivt_calc import ivt, get_data
 import matplotlib.animation as animation
 from AR_stats import munch, alfons_mucha, klimt
 import matplotlib.colors as mcolors
+import cartopy.io.shapereader as shpreader
 
 
 time = "2002-08-12T12:00:00.000000000"
@@ -84,6 +85,7 @@ def picasso(ivt_file, time, set_extent = True, save = False, ax = None):
     ax.coastlines()
     ax.add_feature(cfeature.BORDERS, linewidth = 0.5)
     ax.set_title(f"IVT, time = {time[:13]}")
+
     if set_extent:
         ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
     if own_fig:
@@ -465,12 +467,14 @@ def plots(kind, time, **kwargs):
 #plots(["ivt", "wind_field", "q_wind", "precipitation", "IVT_composite_czechia", "streamlines",
 # "AR_count", "quv"], time, level=850)
 
-times = ["2002-08-05T12:00:00", "2002-08-06T12:00:00", "2002-08-07T12:00:00"]
+times = ["2002-08-08T12:00:00", "2002-08-10T12:00:00", "2002-08-11T12:00:00"]
 
 #plots("precipitation", times, set_extent=False)                               # tři IVT vedle sebe
 #plots("ep", times, save=False, set_extent=False)             # tři srážkové mapy, uloží se
 #plots(["ivt", "wind_field"], times, level=850)       # dvě samostatné figury, každá s třemi panely
 #plots("ivt", times[0])
-plots(["AR_count"], time, precip=True, save=True)
-# jeden čas jako dřív
+#plots(["AR_count"], time, precip=True, save=True)
+#plots(["wind_field"], time, level=777)
+# jeden čas jako dřív "q_wind", "ep", "streamlines"
+plots(["ivt", "q_wind", "ep", "streamlines"], times, level = 850)
 

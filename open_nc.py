@@ -42,10 +42,11 @@ def davinci(file, time):
     """
     fig, ax = plt.subplots(figsize=(9,6),subplot_kw={"projection": ccrs.PlateCarree()})
     data_test = print_time(file,time)
-    data_test.plot(ax=ax, transform=ccrs.PlateCarree(), cmap = cmap, add_colorbar = False)
+    data_test.plot(ax=ax, transform=ccrs.PlateCarree(), cmap = cmap, add_colorbar = True, label = "AR")
     ax.coastlines()
     ax.add_feature(cfeature.BORDERS, linewidth = 0.5)
-    #ax.set_extent([-40, 60, 15, 80], crs=ccrs.PlateCarree())
+    ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
+    ax.set_title(f"AR detection, time = {time[:13]}")
     plt.show()
 
 

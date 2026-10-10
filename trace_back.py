@@ -167,7 +167,19 @@ def traceback(time, num, level):
         bounds_error=False,
         fill_value=np.nan)
 
+    sp = xr.open_dataset("/mnt/raid1/home/choutkam/surface_pressure.nc")["sp"].transpose("valid_time", "latitude", "longitude")
+
+    interp_sp = RegularGridInterpolator(
+        (time_to_float(sp.valid_time, t_ref),  # čas v hodinách od t_ref
+         sp.latitude.values,
+         sp.longitude.values),
+        sp.values.astype("float32") / 100.0,  # Pa -> hPa
+        bounds_error=False, fill_value=np.nan)
+
     def interpolate(t, p, y, x):
+        p = np.clip(p, lev.min(), lev.max())
+        y = np.clip(y, lat.min(), lat.max())
+        x = np.clip(x, lon.min(), lon.max())
         point = np.array([t, p, y, x])
         u_val = interp_u(point)[0]
         v_val = interp_v(point)[0]
@@ -176,6 +188,13 @@ def traceback(time, num, level):
 
     #t_val = time_to_float(np.datetime64(time), t0)
     #print(interpolate(t_val, 333, 67, -20))
+
+    def ev_ground(t_val, z):  # > 0 nad zemí, < 0 pod zemí
+        x, y, p = z
+        return interp_sp([t_val, y, x])[0] - p
+
+    ev_ground.terminal = True
+    ev_ground.direction = -1
 
     a = 6371000.0  # poloměr Země [m]
 
@@ -202,7 +221,7 @@ def traceback(time, num, level):
 
 
             sol = solve_ivp(rhs, [t_start, t_end], [x0, y0, p0], method="RK45",
-                             max_step=1.0, atol=1e-6, rtol=1e-3, dense_output=True)
+                             max_step=1.0, atol=1e-6, rtol=1e-3, dense_output=True, events=ev_ground)
             result.append(sol)
         return result
 
@@ -213,7 +232,7 @@ def traceback(time, num, level):
         return q_vals.ravel()
 
 
-    def compute_q_along_trajectories(result):
+    def compute_q_along_trajectories(result, gradient = False):
         """
         Computes Dq/Dt = (e-p)/m along trajectories.
         :param result: solve_ivp output
@@ -222,29 +241,42 @@ def traceback(time, num, level):
         out = []
 
         for sol in result:
-            #t_vals = np.linspace(sol.t[0], sol.t[-1], 100)
-            t_vals = sol.t
+            t_vals = np.linspace(sol.t[0], sol.t[-1], 500)
+            #t_vals = sol.t
             x_vals = sol.sol(t_vals)[0]
             y_vals = sol.sol(t_vals)[1]
             p_vals = sol.sol(t_vals)[2]
-
             q_vals = interpolate_q_along_traj(t_vals, p_vals, y_vals, x_vals)
-            q_smooth = uniform_filter1d(q_vals, size=5, mode="nearest")
-            DqDt = np.gradient(q_smooth, t_vals) * 1000  # g/kg/h
-            out.append({
-                "t": t_vals,
-                "x": x_vals,
-                "y": y_vals,
-                "p": p_vals,
-                "q": q_vals,
-                "DqDt": DqDt,})
+
+            if gradient:
+                q_smooth = uniform_filter1d(q_vals, size=5, mode="nearest")
+                DqDt = np.gradient(q_smooth, t_vals) * 1000  # g/kg/h
+                out.append({
+                    "t": t_vals,
+                    "x": x_vals,
+                    "y": y_vals,
+                    "p": p_vals,
+                    "q": q_vals,
+                    "DqDt": DqDt,
+                })
+            else:
+                DqDt = -np.diff(q_vals) * 1000          #minus, protože to jo zpětně
+                out.append({
+                    "t": t_vals[:-1],
+                    "x": x_vals[:-1],
+                    "y": y_vals[:-1],
+                    "p": p_vals[:-1],
+                    "q": q_vals[:-1],
+                    "DqDt": DqDt,
+                })
         return out
 
 
     points = initiate_particles(time, num = num, use_arrival=False)
     solulu = backtrack(points, time)
     trajs_with_q = compute_q_along_trajectories(solulu)
-    return solulu, trajs_with_q
+    trajs_q_grad = compute_q_along_trajectories(solulu, gradient=True)
+    return solulu, trajs_with_q, trajs_q_grad
 
 
 
@@ -268,7 +300,7 @@ def plot_trajectories_with_DqDt(trajs_with_q, set_extent=True, save=False, colou
         ax.add_feature(cfeature.BORDERS, linestyle=':')
 
         all_dqdt = np.concatenate([tr["DqDt"] for tr in trajs_with_q])
-        vmin, vmax = np.percentile(all_dqdt,10), np.percentile(all_dqdt, 90)
+        vmin, vmax = np.nanpercentile(all_dqdt, 10), np.nanpercentile(all_dqdt, 90)
 
         if colour:
             cmap = ListedColormap(['blue', 'red'])
@@ -278,7 +310,9 @@ def plot_trajectories_with_DqDt(trajs_with_q, set_extent=True, save=False, colou
             norm = None
 
         for tr in trajs_with_q:
-            sc = ax.scatter(tr["x"], tr["y"], c=tr["DqDt"], cmap=cmap, norm = norm,
+            valid = np.isfinite(tr["DqDt"])
+            sc = ax.scatter(tr["x"][valid], tr["y"][valid], c=tr["DqDt"][valid],
+                            cmap=cmap, norm=norm,
                             vmin=vmin if norm is None else None,
                             vmax=vmax if norm is None else None,
                             s=0.5, edgecolor="none",
@@ -291,11 +325,15 @@ def plot_trajectories_with_DqDt(trajs_with_q, set_extent=True, save=False, colou
         plt.show()
 
 
+
+
+
 if __name__ == "__main__":
-    trajs, trajs_q = traceback(time, 1000, 837)
-    plot_trajectories_with_DqDt(trajs_q, set_extent=False, save=True)
-    plot_trajectories_with_DqDt(trajs_q, set_extent=False, save=True, colour=True)
-    plot_trajectories(trajs, set_extent=False, save=True)
+
+    trajs, trajs_q, trajs_q_grad = traceback(time, 1000, 850)
+    plot_trajectories_with_DqDt(trajs_q, save=True)
+    plot_trajectories_with_DqDt(trajs_q_grad, save=True)
+    plot_trajectories(trajs, save=True)
 
 #e-p plot sum for different days
 #composite plots
