@@ -9,6 +9,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from scipy.integrate import solve_ivp
 from scipy.ndimage import uniform_filter1d
+import matplotlib.colors as mcolors
 
 
 time = "2002-08-11T12:00:00.000000000"
@@ -288,9 +289,28 @@ def plot_trajectories(result, set_extent = True, save = False):
             traj_x, traj_y = sol.y[0], sol.y[1]
             ax.plot(traj_x, traj_y, transform=ccrs.PlateCarree(), linewidth=0.1)
 
-        if set_extent: ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
-        plt.title("Back-trajectories")
+        if set_extent: ax.set_extent([-90, 60, 10, 80], crs=ccrs.PlateCarree())
+        plt.title(f"Back-trajectories, start = {time[:13]}")
         if save: plt.savefig("/mnt/raid1/home/choutkam/ARs/trajektorie_from_cz.png", dpi=300, bbox_inches="tight")
+        plt.show()
+
+def plot_trajectories2(sols, cmap="viridis", set_extent=True):
+        """
+        Barva trajektorie podle času příchodu (sol.t[0], hodiny od vypuštění/počátku).
+        """
+        fig, ax = plt.subplots(figsize=(10, 6), subplot_kw={"projection": ccrs.PlateCarree()})
+        ax.add_feature(cfeature.COASTLINE, linewidth=0.8)
+        ax.add_feature(cfeature.BORDERS, linestyle=':')
+        if set_extent:
+            ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
+
+        t_arr = np.concatenate([s.t for s in sols])
+        t_start = np.max(t_arr)
+        t_end = np.min(t_arr)
+
+        for sol in sols:
+            sc = ax.scatter(sol.y[0], sol.y[1], c = sol.t, transform = ccrs.PlateCarree(), vmin=0, vmax = t_start-t_end, s = 0.5)
+        fig.colorbar(sc, label="Hours before arrival in Czechia", ax=ax, shrink=0.7)
         plt.show()
 
 
@@ -318,13 +338,11 @@ def plot_trajectories_with_DqDt(trajs_with_q, set_extent=True, save=False, colou
                             s=0.5, edgecolor="none",
                             transform=ccrs.PlateCarree())
 
-        if set_extent: ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
+        if set_extent: ax.set_extent([-90, 60, 10, 80], crs=ccrs.PlateCarree())
         ax.set_title("Back-trajectories colored by Dq/Dt")
-        fig.colorbar(sc, label="Dq/Dt [g/kg/h]")
+        fig.colorbar(sc, label="Dq/Dt [g/kg/h]", ax = ax, shrink = 0.7)
         if save: plt.savefig("/mnt/raid1/home/choutkam/ARs/trajektorie_DqDt.png", dpi=300, bbox_inches="tight")
         plt.show()
-
-
 
 
 
@@ -334,6 +352,7 @@ if __name__ == "__main__":
     plot_trajectories_with_DqDt(trajs_q, save=True)
     plot_trajectories_with_DqDt(trajs_q_grad, save=True)
     plot_trajectories(trajs, save=True)
+    plot_trajectories2(trajs)
 
 #e-p plot sum for different days
 #composite plots

@@ -7,10 +7,8 @@ from ivt_calc import ivt, get_data
 import matplotlib.animation as animation
 from AR_stats import munch, alfons_mucha, klimt
 import matplotlib.colors as mcolors
-import cartopy.io.shapereader as shpreader
 
-
-time = "2002-08-12T12:00:00.000000000"
+time = "2002-08-11T12:00:00.000000000"
 
 def convert_time(time):
     str_time = str(time)
@@ -52,7 +50,7 @@ def multi(draw, times, cbar_label, save, filename):
         fig.colorbar(obj, ax=axes, shrink=0.8, pad=0.02, label=lab)
 
     if save:
-        fig.savefig(filename, dpi=300, bbox_inches="tight")
+        fig.savefig(f"/mnt/raid1/home/choutkam/ARs/{filename}", dpi=300, bbox_inches="tight")
     plt.show()
 
 
@@ -89,7 +87,7 @@ def picasso(ivt_file, time, set_extent = True, save = False, ax = None):
     if set_extent:
         ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
     if own_fig:
-        if save: plt.savefig(f"ivt_{convert_time(time)}.png", dpi=300, bbox_inches="tight")
+        if save: plt.savefig(f"/mnt/raid1/home/choutkam/ARs/ivt_{convert_time(time)}.png", dpi=300, bbox_inches="tight")
         plt.show()
     return im
 
@@ -144,13 +142,13 @@ def animatev2(data, name):
     ax.coastlines()
     ax.add_feature(cfeature.BORDERS, linewidth = 0.5)
     ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
-    mesh = data.isel(time=0).plot(ax=ax, transform=ccrs.PlateCarree(), cbar_kwargs={"label": "IVT [kg/(m·s)]"}, vmin=0, vmax=1200)
+    mesh = data.isel(time=0).plot(ax=ax, transform=ccrs.PlateCarree(), cbar_kwargs={"label": "IVT [kg/(m·s)]", "shrink": 0.7}, vmin=0, vmax=1200)
     title = ax.set_title(f"time = {str(data.time.isel(time=0).values)}")
 
     def update(frame):
         new_array = data.isel(time=frame).values
         mesh.set_array(new_array.ravel())
-        title.set_text(f"time = {str(data.time.isel(time=frame).values)}")
+        title.set_text(f"IVT, time = {str(data.time.isel(time=frame).values)}")
         return mesh
 
     ani = animation.FuncAnimation(fig, update,frames=len(data.time), interval=5/2, blit=False)
@@ -252,7 +250,7 @@ def get_precipitaion_evaporation(time, eva = False):
     :param eva: True/False whether you want evaporation or precipitation
     :return: dataset for the time
     """
-    address = "/net/meop-nas13.priv/volume1/data1/nmcrespo/ARs_Choutka/e_p_200207_200208.nc"
+    address = "/mnt/raid1/home/choutkam/ep_2002_08.nc"
     data = xr.open_dataset(address)
     day = time[:10]
     if eva:
@@ -281,11 +279,14 @@ def plot_e_or_p(time, eva = False, set_extent = True, save = False, ax = None):
     ax.add_feature(cfeature.BORDERS, linewidth=0.5)
 
     if eva:
-        im = data.plot(ax=ax, transform=ccrs.PlateCarree(), cmap="turbo", add_colorbar=own_fig)
+        data = -1*data
+        im = data.plot(ax=ax, transform=ccrs.PlateCarree(), cmap="turbo",
+                       add_colorbar=own_fig,
+                       cbar_kwargs={"label": "Evaporation [mm/day]"} if own_fig else None)
         if set_extent:
             ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
     else:
-        im = data.plot(ax=ax, transform=ccrs.PlateCarree(), cmap="YlGnBu", vmin=0, vmax=20,
+        im = data.plot(ax=ax, transform=ccrs.PlateCarree(), cmap="YlGnBu", vmin=0, vmax=70,
                        add_colorbar=own_fig,
                        cbar_kwargs={"label": "Precipitation [mm/day]"} if own_fig else None)
         if set_extent:
@@ -310,7 +311,7 @@ def get_q(time, level):
 
 
 
-def plot_q_with_wind(time, level, set_extent = True, save = False, ax = None, skip=10, scale=1000, width=0.003, qmax=0.015, wmax=40):
+def plot_q_with_wind(time, level, set_extent = True, save = False, ax = None, skip=10, scale=800, width=0.003, qmax=0.015, wmax=30):
     """
     Plots q at specific level with wind.
     :param time: np.datetime
@@ -329,7 +330,7 @@ def plot_q_with_wind(time, level, set_extent = True, save = False, ax = None, sk
     q_im = q.plot(ax=ax, transform=ccrs.PlateCarree(), add_colorbar=own_fig, vmin=0, vmax=qmax)
     wind = ax.quiver(lon[::skip], lat[::skip], U[::skip, ::skip], V[::skip, ::skip],
                      norm[::skip, ::skip], transform=ccrs.PlateCarree(),
-                     scale=scale, width=width, cmap="turbo",clim=(0, wmax))
+                     scale=scale, width=width, cmap="turbo",clim=(0, wmax), headwidth = 2)
 
     if own_fig:
         fig = ax.figure
@@ -360,7 +361,7 @@ def plot_diff_e_p(time, set_extent = True, save = False, ax = None):
     ax.add_feature(cfeature.BORDERS, linewidth=0.5)
     if set_extent:
         ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
-    im = E_P.plot(ax=ax, transform=ccrs.PlateCarree(), cmap="RdBu", vmin=-10, vmax=10,
+    im = E_P.plot(ax=ax, transform=ccrs.PlateCarree(), cmap="RdBu", vmin=-15, vmax=15,
                   add_colorbar=own_fig,
                   cbar_kwargs={"label": "E-P [mm/day]"} if own_fig else None)
     ax.set_title(f"E-P time = {str(time)[:10]}")
@@ -467,7 +468,7 @@ def plots(kind, time, **kwargs):
 #plots(["ivt", "wind_field", "q_wind", "precipitation", "IVT_composite_czechia", "streamlines",
 # "AR_count", "quv"], time, level=850)
 
-times = ["2002-08-08T12:00:00", "2002-08-10T12:00:00", "2002-08-11T12:00:00"]
+times1, times2 = ["2002-08-04T12:00:00","2002-08-05T12:00:00"], [ "2002-08-06T12:00:00", "2002-08-07T12:00:00"]
 
 #plots("precipitation", times, set_extent=False)                               # tři IVT vedle sebe
 #plots("ep", times, save=False, set_extent=False)             # tři srážkové mapy, uloží se
@@ -476,6 +477,11 @@ times = ["2002-08-08T12:00:00", "2002-08-10T12:00:00", "2002-08-11T12:00:00"]
 #plots(["AR_count"], time, precip=True, save=True)
 #plots(["wind_field"], time, level=777)
 # jeden čas jako dřív "q_wind", "ep", "streamlines"
-plots(["ivt", "q_wind", "ep", "streamlines"], times, level = 850)
-create_animation(time_interval=("2002-08-02T12:00:00.000000000","2002-08-11T18:00:00.000000000"),name="ivt.gif")
+#plots("q_wind", times1, level = 850, save=True)
+#plots("q_wind", times2, level = 850, save=True)
+plots("ep", times1, set_extent=True, save=False)
+plots("ep", times2, set_extent=True, save=False)
+#plots("ep", times, set_extent=False, save=True)
+#plots("ep", time)
+#create_animation(time_interval=("2002-08-03T12:00:00.000000000","2002-08-12T12:00:00.000000000"),name="ivt.gif")
 
