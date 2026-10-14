@@ -12,14 +12,14 @@ from trace_back import get_points
 
 time = "2002-08-11T06:00:00.000000000"
 
-def get_precipitaion(time, eva = False):
+def get_precipitaion(time):
     """
     It gets data for plotting precipitation or evaporation.
     :param time: np.datetime
     :param eva: True/False whether you want evaporation or precipitation
     :return: dataset for the time
     """
-    address = "/net/meop-nas13.priv/volume1/data1/nmcrespo/ARs_Choutka/pr_2002.nc"
+    address = "/mnt/raid1/home/choutkam/p_2002.nc"
     data = xr.open_dataset(address)
     day = time[:10]
     precipitation = data["tp"].sel(valid_time = day)
@@ -105,7 +105,7 @@ def alfons_mucha(save_fig = False, precip = False):
     ax.bar(months, monthly_sum, color = "lightsteelblue", label="All ARs")
     if precip:
         ax.bar(months, monthly_precip, width=0.4, color="navy",
-               label="ARs followed by strong precipitation")
+               label="ARs followed by precipitation")
         # podíl nad sloupcem
         for m, (tot, hit) in enumerate(zip(monthly_sum, monthly_precip)):
             if tot > 0:
@@ -237,16 +237,16 @@ def munch(whole_year = False ,save = False, set_extent = True):
     fig, ax = plt.subplots(figsize=(10, 5), subplot_kw={"projection": ccrs.PlateCarree()})
     data = xr.open_dataset(composite_file)
     data = data["ivt"]
-    data.plot(ax=ax, transform = ccrs.PlateCarree(),cbar_kwargs={"label": "IVT [kg/(m·s)]"})
+    data.plot(ax=ax, transform = ccrs.PlateCarree(),cbar_kwargs={"label": "IVT [kg/(m·s)]"}, vmin = 0, vmax = 450)
     ax.coastlines()
     ax.add_feature(cfeature.BORDERS, linewidth=0.5)
     ax.set_title("IVT composite 2002")
     if set_extent:
         ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
-    if save: plt.savefig(f"ivt_composite.png", dpi=300, bbox_inches="tight")
+    if save: plt.savefig("/home/choutkam/ARs/ivt_composite_2002.png", dpi=300, bbox_inches="tight")
     plt.show()
 
 if __name__ == "__main__":
-    munch()
-    klimt(time)
-    alfons_mucha()
+    munch(whole_year=True)
+    #klimt(time)
+    #alfons_mucha()

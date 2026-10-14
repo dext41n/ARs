@@ -252,13 +252,14 @@ def get_precipitaion_evaporation(time, eva = False):
     """
     address = "/mnt/raid1/home/choutkam/ep_2002_08.nc"
     data = xr.open_dataset(address)
-    day = time[:10]
+    start = np.datetime64(str(time)[:10]) + np.timedelta64(1, "h")
+    end = start + np.timedelta64(23, "h")
     if eva:
-        evaporation = data["e"].sel(valid_time = day)
+        evaporation = data["e"].sel(valid_time = slice(start, end))
         daily_te = evaporation.sum(dim = "valid_time")
         output = daily_te * 1000
     else:
-        precipitation = data["tp"].sel(valid_time = day)
+        precipitation = data["tp"].sel(valid_time = slice(start, end))
         daily_tp = precipitation.sum(dim = "valid_time")
         output = daily_tp * 1000
 
@@ -286,7 +287,7 @@ def plot_e_or_p(time, eva = False, set_extent = True, save = False, ax = None):
         if set_extent:
             ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
     else:
-        im = data.plot(ax=ax, transform=ccrs.PlateCarree(), cmap="YlGnBu", vmin=0, vmax=70,
+        im = data.plot(ax=ax, transform=ccrs.PlateCarree(), cmap="YlGnBu", vmin=0, vmax=100,
                        add_colorbar=own_fig,
                        cbar_kwargs={"label": "Precipitation [mm/day]"} if own_fig else None)
         if set_extent:
@@ -468,20 +469,15 @@ def plots(kind, time, **kwargs):
 #plots(["ivt", "wind_field", "q_wind", "precipitation", "IVT_composite_czechia", "streamlines",
 # "AR_count", "quv"], time, level=850)
 
-times1, times2 = ["2002-08-04T12:00:00","2002-08-05T12:00:00"], [ "2002-08-06T12:00:00", "2002-08-07T12:00:00"]
+times1 = ["2002-08-07T12:00:00","2002-08-08T12:00:00", "2002-08-09T12:00:00"]
 
-#plots("precipitation", times, set_extent=False)                               # tři IVT vedle sebe
-#plots("ep", times, save=False, set_extent=False)             # tři srážkové mapy, uloží se
-#plots(["ivt", "wind_field"], times, level=850)       # dvě samostatné figury, každá s třemi panely
-#plots("ivt", times[0])
-#plots(["AR_count"], time, precip=True, save=True)
-#plots(["wind_field"], time, level=777)
+#plots(["ivt", "wind_field"], times, level=850)
+
 # jeden čas jako dřív "q_wind", "ep", "streamlines"
 #plots("q_wind", times1, level = 850, save=True)
 #plots("q_wind", times2, level = 850, save=True)
-plots("ep", times1, set_extent=True, save=False)
-plots("ep", times2, set_extent=True, save=False)
-#plots("ep", times, set_extent=False, save=True)
-#plots("ep", time)
-#create_animation(time_interval=("2002-08-03T12:00:00.000000000","2002-08-12T12:00:00.000000000"),name="ivt.gif")
+#plots("ep", times1, set_extent=True, save=True)
+#plots("precipitation", "2002-08-13T12:00:00", set_extent=False, save=True)
 
+#create_animation(time_interval=("2002-08-03T12:00:00.000000000","2002-08-12T12:00:00.000000000"),name="ivt.gif")
+plots("AR_count", time, precip=True, save=True)

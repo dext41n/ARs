@@ -131,9 +131,11 @@ def ivt(time):
 
 
 if __name__ == "__main__":
-    time = ("2002-07-29T12:00:00.000000000","2002-08-16T12:00:00.000000000")
+    time = ("2002-08-11T12:00:00.000000000","2002-08-11T12:00:00.000000000")
     ivt_file = ivt(time)
-
+    approx_ivt_in_Prague = ivt_file.sel(latitude = 50, longitude = 14.5)
+    print(approx_ivt_in_Prague)
+    print(ivt_file)
 
 #srovnat s tím spočítaným někým jiným
 #plotnout q, normu celýho vektoru větru

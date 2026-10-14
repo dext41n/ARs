@@ -294,7 +294,7 @@ def plot_trajectories(result, set_extent = True, save = False):
         if save: plt.savefig("/mnt/raid1/home/choutkam/ARs/trajektorie_from_cz.png", dpi=300, bbox_inches="tight")
         plt.show()
 
-def plot_trajectories2(sols, cmap="viridis", set_extent=True):
+def plot_trajectories2(sols, set_extent=True, save = True):
         """
         Barva trajektorie podle času příchodu (sol.t[0], hodiny od vypuštění/počátku).
         """
@@ -302,15 +302,17 @@ def plot_trajectories2(sols, cmap="viridis", set_extent=True):
         ax.add_feature(cfeature.COASTLINE, linewidth=0.8)
         ax.add_feature(cfeature.BORDERS, linestyle=':')
         if set_extent:
-            ax.set_extent([-90, 60, -10, 80], crs=ccrs.PlateCarree())
+            ax.set_extent([-90, 60, 10, 80], crs=ccrs.PlateCarree())
 
         t_arr = np.concatenate([s.t for s in sols])
         t_start = np.max(t_arr)
         t_end = np.min(t_arr)
 
         for sol in sols:
-            sc = ax.scatter(sol.y[0], sol.y[1], c = sol.t, transform = ccrs.PlateCarree(), vmin=0, vmax = t_start-t_end, s = 0.5)
+            sc = ax.scatter(sol.y[0], sol.y[1], c = sol.t-t_start+t_end, transform = ccrs.PlateCarree(), vmin=-(t_start-t_end), vmax = 0, s = 0.5)
         fig.colorbar(sc, label="Hours before arrival in Czechia", ax=ax, shrink=0.7)
+        ax.set_title("Trajectories back in time")
+        if save: plt.savefig("/mnt/raid1/home/choutkam/ARs/trajektorie.png", dpi=300, bbox_inches="tight")
         plt.show()
 
 
@@ -348,11 +350,11 @@ def plot_trajectories_with_DqDt(trajs_with_q, set_extent=True, save=False, colou
 
 if __name__ == "__main__":
 
-    trajs, trajs_q, trajs_q_grad = traceback(time, 1000, 850)
+    trajs, trajs_q, trajs_q_grad = traceback(time, 1000, 700)
     plot_trajectories_with_DqDt(trajs_q, save=True)
     plot_trajectories_with_DqDt(trajs_q_grad, save=True)
     plot_trajectories(trajs, save=True)
-    plot_trajectories2(trajs)
+    plot_trajectories2(trajs, save = True)
 
 #e-p plot sum for different days
 #composite plots
